@@ -10,12 +10,12 @@ from tkinter import filedialog
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import chromedriver_autoinstaller 
+chrome_profile_directory = r"C:\Users\Administrator\AppData\Local\Google\Chrome\User Data\Default"
 file_path = ''
 global str_sheet  
 global checkbox_vars
 global checkbox_values
 def login(tk,mk,link_url,xpath_file):
-    driver = webdriver.Chrome()
     global str_sheet
     global checkbox_vars
     
@@ -29,6 +29,7 @@ def login(tk,mk,link_url,xpath_file):
     options.add_argument("--start-maximized")
     options.add_argument("--disable-notifications")
     options.add_argument('--ignore-certificate-errors')
+    options.add_argument(f"--user-data-dir={chrome_profile_directory}")
     driver = webdriver.Chrome(options=options)
     driver.get(link_url)
     time.sleep(2)
@@ -113,6 +114,8 @@ def fill_a_form(xpath_file, driver, link_cbm, name_sheet, array_column_part, tol
             print(info[row][var_current_part][0].strip().lower())
             print(var_current_part,toltal_part+1)
             if info[row][var_current_part][0].strip().lower() == 'không nhập':
+                sheet[row+3][array_column_part[-1]+var_current_part+1].value = "Không thực hiện"
+                ex.save(xpath_file)
                 continue
             #----------------------------------------------------------------------------
             elif check_None(info[row][var_current_part]) == True:
@@ -168,6 +171,7 @@ def fill_a_form(xpath_file, driver, link_cbm, name_sheet, array_column_part, tol
                 pos_combobox = 6
                 error = 0
                 #fill body form
+                err = False
                 res = True
                 i = 1
                 while(i<99 and res):
@@ -178,19 +182,20 @@ def fill_a_form(xpath_file, driver, link_cbm, name_sheet, array_column_part, tol
                                 driver.find_element(By.XPATH,f'/html/body/form/table/tbody/tr[2]/td[1]/div/div/table/tbody/tr[2]/td/span/table/tbody/tr[1]/td/div/div/table/tbody/tr[{i}]/td[2]/div/textarea').clear()
                                 time.sleep(0.2)
                                 driver.find_element(By.XPATH,f'/html/body/form/table/tbody/tr[2]/td[1]/div/div/table/tbody/tr[2]/td/span/table/tbody/tr[1]/td/div/div/table/tbody/tr[{i}]/td[2]/div/textarea').send_keys(info[row][var_current_part][pos_input])  
+                                pos_input+=1
+                                error = 0
+                                print(i,"textarea")
                             except:
                                 driver.find_element(By.XPATH,f'/html/body/form/table/tbody/tr[2]/td[1]/div/div/table/tbody/tr[2]/td/span/table/tbody/tr[1]/td/div/div/table/tbody/tr[{i}]/td[2]/div/input').clear()
                                 time.sleep(0.2)
                                 driver.find_element(By.XPATH,f'/html/body/form/table/tbody/tr[2]/td[1]/div/div/table/tbody/tr[2]/td/span/table/tbody/tr[1]/td/div/div/table/tbody/tr[{i}]/td[2]/div/input').send_keys(info[row][var_current_part][pos_input])  
-                            finally:
                                 pos_input+=1
                                 error = 0
-                                print(i,"textarea")
+                                print(i,"input")
                         except:
                             try:
                                 #combobox
                                 driver.find_element(By.XPATH,f'/html/body/form/table/tbody/tr[2]/td[1]/div/div/table/tbody/tr[2]/td/span/table/tbody/tr[1]/td/div/div/table/tbody/tr[{i}]/td[2]/div/span/button').click()
-                                
                                 time.sleep(1)
                                 for k in range(1,5):    
                                     text = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH,f'/html/body/div[{pos_combobox}]/table/tbody/tr[{k}]/td/label'))).text
@@ -253,8 +258,17 @@ def fill_a_form(xpath_file, driver, link_cbm, name_sheet, array_column_part, tol
                             break
                         error +=1
                         if error > 4:
-                            print("Lost.................")
-                            raise
+                            # print("Lost.................")
+                            # raise
+                            err =  True
+                            break
+                if err:
+                    sheet[row+3][array_column_part[-1]+var_current_part+1].value = "Chưa thực hiện"
+                    ex.save(xpath_file)
+                    continue                           
+                else:
+                    sheet[row+3][array_column_part[-1]+var_current_part+1].value = "Đã thực hiện"
+                    ex.save(xpath_file)
                 #luu
                 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,'/html/body/form/table/tbody/tr[1]/td/div/div[1]/button[2]'))).click()
                 time.sleep(2)
